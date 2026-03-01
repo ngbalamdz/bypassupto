@@ -45,7 +45,7 @@
         background: #2d2d2d; color: #888; padding: 5px 10px; font-size: 12px;
         border-bottom: 1px solid #111; display: flex; justify-content: space-between;
     `;
-    titleBar.innerHTML = `<span>root@uptolink-bot:~</span><span>V21.0_Native_Bounce</span>`;
+    titleBar.innerHTML = `<span>root@uptolink-bot:~</span><span>Owner: PhatNotTaken</span>`;
     consoleContainer.appendChild(titleBar);
 
     let logArea = document.createElement('div');
