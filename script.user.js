@@ -1,399 +1,210 @@
 // ==UserScript==
-// @name         Auto Bypass Uptolink - HuongDanGetLink
-// @namespace    https://huongdangetlink.com/
-// @version      1.0.0
-// @description  Tự động bypass các bước chờ trên uptolink.one khi dùng qua huongdangetlink.com
-// @author       Auto
-// @match        https://huongdangetlink.com/*
+// @name         Auto Uptolink (V21.0 - Native Referer Bounce)
+// @namespace    http://tampermonkey.net/
+// @version      21.0
+// @description  Bypass Up-to-link - owner PhatNotTaken
+// @match        *://*/*
 // @grant        GM_xmlhttpRequest
-// @grant        GM_setValue
-// @grant        GM_getValue
-// @grant        GM_addStyle
 // @connect      uptolink.one
 // @run-at       document-end
 // ==/UserScript==
 
-(function () {
+(function() {
     'use strict';
 
-    // ===================== UI STYLES =====================
-    GM_addStyle(`
-        #bypass-panel {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 999999;
-            width: 320px;
-            background: #0d0d0d;
-            border: 1px solid #2a2a2a;
-            border-radius: 14px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            color: #e0e0e0;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-            overflow: hidden;
-        }
-        #bypass-header {
-            background: #161616;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #2a2a2a;
-        }
-        #bypass-header span {
-            font-weight: bold;
-            color: #00ff88;
-            font-size: 14px;
-            letter-spacing: 0.05em;
-        }
-        #bypass-close {
-            cursor: pointer;
-            color: #666;
-            font-size: 18px;
-            line-height: 1;
-            transition: color 0.2s;
-        }
-        #bypass-close:hover { color: #fff; }
-        #bypass-body {
-            padding: 14px 16px;
-        }
-        #bypass-status {
-            margin-bottom: 10px;
-            color: #aaa;
-            min-height: 20px;
-        }
-        #bypass-status.ok { color: #00ff88; }
-        #bypass-status.err { color: #ff4d4d; }
-        #bypass-status.info { color: #7eb8ff; }
-        #bypass-bar-wrap {
-            background: #1e1e1e;
-            border-radius: 6px;
-            height: 6px;
-            overflow: hidden;
-            margin-bottom: 12px;
-        }
-        #bypass-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #00ff88, #00c2ff);
-            border-radius: 6px;
-            transition: width 0.4s ease;
-        }
-        #bypass-log {
-            background: #111;
-            border-radius: 8px;
-            padding: 8px 10px;
-            height: 100px;
-            overflow-y: auto;
-            font-size: 11px;
-            color: #555;
-            line-height: 1.6;
-            border: 1px solid #1e1e1e;
-        }
-        #bypass-log .log-ok { color: #00cc66; }
-        #bypass-log .log-err { color: #ff6b6b; }
-        #bypass-log .log-info { color: #5ba8ff; }
-        #bypass-btn {
-            margin-top: 12px;
-            width: 100%;
-            padding: 9px;
-            background: #00ff88;
-            color: #000;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-            letter-spacing: 0.05em;
-        }
-        #bypass-btn:hover { background: #00e07a; }
-        #bypass-btn:active { transform: scale(0.98); }
-        #bypass-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
-        #bypass-result {
-            margin-top: 10px;
-            word-break: break-all;
-            display: none;
-        }
-        #bypass-result a {
-            color: #00ff88;
-            text-decoration: underline;
-        }
-        #bypass-input {
-            width: 100%;
-            box-sizing: border-box;
-            background: #111;
-            border: 1px solid #2a2a2a;
-            border-radius: 8px;
-            color: #e0e0e0;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            padding: 8px 10px;
-            margin-bottom: 10px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        #bypass-input:focus { border-color: #00ff88; }
-    `);
+    const currentUrl = window.location.href;
+    const urlParams = new URLSearchParams(window.location.search);
+    const hostName = window.location.hostname;
 
-    // ===================== UI ELEMENTS =====================
-    const panel = document.createElement('div');
-    panel.id = 'bypass-panel';
-    panel.innerHTML = `
-        <div id="bypass-header">
-            <span>⚡ UPTOLINK BYPASS</span>
-            <span id="bypass-close">✕</span>
-        </div>
-        <div id="bypass-body">
-            <input id="bypass-input" type="text" placeholder="Nhập URL trang gốc (Referer)..." />
-            <div id="bypass-status" class="info">Sẵn sàng...</div>
-            <div id="bypass-bar-wrap"><div id="bypass-bar"></div></div>
-            <div id="bypass-log"></div>
-            <button id="bypass-btn">▶ BẮT ĐẦU BYPASS</button>
-            <div id="bypass-result"></div>
-        </div>
+    if (urlParams.has('redirect_to_upto')) {
+        const finishUrl = decodeURIComponent(urlParams.get('redirect_to_upto'));
+        document.body.innerHTML = `
+            <div style="background:#000; color:#0f0; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:monospace; font-size: 24px;">
+                <h2>ĐANG ÉP REFERER TỰ NHIÊN...</h2>
+                <p style="color:yellow">Nguồn gửi đi: ${hostName}</p>
+                <p>Đang phóng thẳng vào Link đích...</p>
+            </div>`;
+
+        setTimeout(() => { window.location.href = finishUrl; }, 1000);
+        return;
+    }
+
+    if (!hostName.includes('huongdangetlink.com')) return;
+
+    let consoleContainer = document.createElement('div');
+    consoleContainer.style.cssText = `
+        position: fixed; bottom: 20px; right: 20px; width: 500px; height: 380px;
+        background: #1e1e1e; color: #cccccc; font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 13px; border: 1px solid #333333; border-radius: 8px;
+        z-index: 2147483647; box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+        display: flex; flex-direction: column; overflow: hidden;
     `;
-    document.body.appendChild(panel);
 
-    document.getElementById('bypass-close').onclick = () => panel.remove();
+    let titleBar = document.createElement('div');
+    titleBar.style.cssText = `
+        background: #2d2d2d; color: #888; padding: 5px 10px; font-size: 12px;
+        border-bottom: 1px solid #111; display: flex; justify-content: space-between;
+    `;
+    titleBar.innerHTML = `<span>root@uptolink-bot:~</span><span>V21.0_Native_Bounce</span>`;
+    consoleContainer.appendChild(titleBar);
 
-    const statusEl = document.getElementById('bypass-status');
-    const barEl = document.getElementById('bypass-bar');
-    const logEl = document.getElementById('bypass-log');
-    const btn = document.getElementById('bypass-btn');
-    const resultEl = document.getElementById('bypass-result');
+    let logArea = document.createElement('div');
+    logArea.style.cssText = `flex-grow: 1; padding: 10px; overflow-y: auto; line-height: 1.5;`;
+    consoleContainer.appendChild(logArea);
 
-    function setStatus(msg, type = 'info') {
-        statusEl.textContent = msg;
-        statusEl.className = type;
+    let inputArea = document.createElement('div');
+    inputArea.style.cssText = `padding: 10px; border-top: 1px dotted #444; display: flex; align-items: center;`;
+
+    let prefix = document.createElement('span');
+    prefix.style.color = "#4CAF50";
+    prefix.innerText = "Target_URL:~$ ";
+
+    let inputField = document.createElement('input');
+    inputField.type = "text";
+    inputField.placeholder = "Dán link referer vào đây (VD: https://789win-mobi.com/)...";
+    inputField.style.cssText = `
+        flex-grow: 1; background: transparent; border: none; color: #fff;
+        font-family: 'Consolas', monospace; font-size: 13px; outline: none; margin-left: 5px;
+    `;
+
+    inputArea.appendChild(prefix);
+    inputArea.appendChild(inputField);
+    consoleContainer.appendChild(inputArea);
+    document.body.appendChild(consoleContainer);
+
+    function logMsg(msg, type = "info") {
+        let color = "#cccccc";
+        if (type === "success") color = "#4CAF50";
+        if (type === "error") color = "#f44336";
+        if (type === "warn") color = "#ffeb3b";
+        if (type === "system") color = "#2196F3";
+
+        let newLine = document.createElement('div');
+        newLine.innerHTML = `<span style="color:#569cd6;">~</span> <span style="color:${color}">${msg}</span>`;
+        logArea.appendChild(newLine);
+        logArea.scrollTop = logArea.scrollHeight;
     }
 
-    function addLog(msg, type = 'info') {
-        const line = document.createElement('div');
-        line.className = `log-${type}`;
-        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        logEl.appendChild(line);
-        logEl.scrollTop = logEl.scrollHeight;
+    logMsg("System Ready...", "system");
+    logMsg("Nhập URL gốc (Referer) và nhấn Enter để bẻ khóa.", "warn");
+
+    inputField.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            let targetUrl = inputField.value.trim();
+            if (targetUrl && targetUrl.startsWith("http")) {
+                inputField.disabled = true;
+                inputField.style.color = "#888";
+                logMsg(`Mục tiêu xác nhận: ${targetUrl}`, "success");
+                autoBypass(targetUrl);
+            } else {
+                logMsg("URL không hợp lệ!", "error");
+            }
+        }
+    });
+
+    let globalSessionCookies = "";
+    const fakeUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0";
+
+    function getOrigin(url) {
+        try { return new URL(url).origin; } catch(e) { return url; }
     }
 
-    function setBar(pct) {
-        barEl.style.width = Math.min(100, pct) + '%';
-    }
+    function autoBypass(refererUrl) {
+        logMsg("Đang lấy Token và Cookie...");
 
+        GM_xmlhttpRequest({
+            method: "GET",
+            url: "https://uptolink.one/statics/jsconfig.js",
+            headers: {
+                "accept": "*/*",
+                "referer": refererUrl,
+                "user-agent": fakeUserAgent
+            },
+            onload: function(res) {
+                let headers = res.responseHeaders.split('\n');
+                headers.forEach(h => {
+                    if (h.toLowerCase().startsWith('set-cookie:')) {
+                        globalSessionCookies += h.substring(11).split(';')[0].trim() + "; ";
+                    }
+                });
 
-    function gmFetch(url, options = {}) {
-        return new Promise((resolve, reject) => {
-            GM_xmlhttpRequest({
-                method: options.method || 'GET',
-                url,
-                headers: options.headers || {},
-                data: options.body || null,
-                onload: (res) => resolve({ text: res.responseText, status: res.status }),
-                onerror: (err) => reject(err),
-            });
+                const match = res.responseText.match(/var\s+rd\s*=\s*"([^"]+)"/);
+                if (!match) return logMsg("Không lấy được token!", "error");
+
+                logMsg(`Lấy Token: ${match[1].substring(0, 10)}...`, "success");
+                runStep(match[1], refererUrl);
+            }
         });
     }
 
-    function sleep(ms) {
-        return new Promise(r => setTimeout(r, ms));
-    }
+    function runStep(token, refererUrl) {
+        const originUrl = getOrigin(refererUrl);
+        const payload = "screen=1366%20x%20768&browser%5Bname%5D=Chrome&browser%5Bversion%5D=145.0.0.0&browser%5BmajorVersion%5D=145&os%5Bname%5D=Windows&os%5Bversion%5D=10.0&mobile=false&cookies=true";
 
-    function getReferer() {
-        // Lấy referer từ trang huongdangetlink.com hoặc trang hiện tại
-        return document.referrer || window.location.href;
-    }
-
-    async function doBySpass() {
-        btn.disabled = true;
-        resultEl.style.display = 'none';
-        resultEl.innerHTML = '';
-        setBar(5);
-
-        const inputEl = document.getElementById('bypass-input');
-        const refererUrl = inputEl.value.trim() || document.referrer || window.location.href;
-
-        if (!refererUrl) {
-            setStatus('Vui lòng nhập URL trang gốc!', 'err');
-            btn.disabled = false;
-            return;
-        }
-
-        addLog(`Referer: ${refererUrl}`, 'info');
-
-        const originMatch = refererUrl.match(/https?:\/\/[^/]+/);
-        const origin = originMatch ? originMatch[0] : 'https://huongdangetlink.com';
-
-        // ---- BƯỚC 1: Lấy Token ----
-        setStatus('Đang lấy token...', 'info');
-        addLog('Đang fetch jsconfig.js...', 'info');
-
-        let token;
-        try {
-            const res = await gmFetch('https://uptolink.one/statics/jsconfig.js', {
-                headers: {
-                    'accept': '*/*',
-                    'accept-language': 'en-US,en;q=0.9,vi;q=0.8',
-                    'referer': refererUrl,
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0'
-                }
-            });
-
-            const match = res.text.match(/var\s+rd\s*=\s*"([^"]+)"/);
-            if (!match) {
-                addLog('Không tìm thấy token!', 'err');
-                setStatus('Lỗi: Không lấy được token', 'err');
-                btn.disabled = false;
-                return;
-            }
-            token = match[1];
-            addLog(`Token: ${token.substring(0, 20)}...`, 'ok');
-            setBar(15);
-        } catch (e) {
-            addLog(`Lỗi fetch jsconfig: ${e}`, 'err');
-            setStatus('Lỗi kết nối', 'err');
-            btn.disabled = false;
-            return;
-        }
-
-        // ---- BƯỚC 2: Bypass Loop ----
-        const payload = 'screen=1366%20x%20768&browser%5Bname%5D=Chrome&browser%5Bversion%5D=145.0.0.0&browser%5BmajorVersion%5D=145&os%5Bname%5D=Windows&os%5Bversion%5D=10.0&mobile=false&cookies=true';
-
-        const postHeaders = {
-            'accept': '*/*',
-            'accept-language': 'en-US,en;q=0.9,vi;q=0.8',
-            'content-type': 'application/x-www-form-urlencoded',
-            'content-value-random': token,
-            'origin': origin,
-            'referer': refererUrl,
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0'
+        let headersPost = {
+            "accept": "*/*",
+            "content-type": "application/x-www-form-urlencoded",
+            "content-value-random": token,
+            "origin": originUrl,
+            "referer": refererUrl,
+            "user-agent": fakeUserAgent
         };
 
-        let step = 0;
-        const MAX_STEPS = 10;
+        if (globalSessionCookies !== "") headersPost["cookie"] = globalSessionCookies;
 
-        while (step < MAX_STEPS) {
-            // Check Job
-            setStatus(`[Step ${step + 1}] Đang kiểm tra job...`, 'info');
-            addLog('Gọi /check/job...', 'info');
+        GM_xmlhttpRequest({
+            method: "POST",
+            url: "https://uptolink.one/check/job",
+            data: payload,
+            headers: headersPost,
+            onload: function(resJob) {
+                let jobData = JSON.parse(resJob.responseText);
+                if(jobData.status !== "success") return logMsg(`Lỗi job: ${resJob.responseText}`, "error");
 
-            let jobData;
-            try {
-                const res = await gmFetch('https://uptolink.one/check/job', {
-                    method: 'POST',
-                    headers: postHeaders,
-                    body: payload
-                });
-                jobData = JSON.parse(res.text);
-            } catch (e) {
-                addLog(`Lỗi /check/job: ${e}`, 'err');
-                setStatus('Lỗi kết nối job', 'err');
-                break;
-            }
+                let waitTime = jobData.wait || 0;
+                logMsg(`[Step ${jobData.step || '?'}] Chờ ${waitTime} giây...`, "system");
 
-            if (jobData.status !== 'success') {
-                addLog(`Job lỗi: ${JSON.stringify(jobData)}`, 'err');
-                setStatus('Lỗi job', 'err');
-                break;
-            }
+                GM_xmlhttpRequest({ method: "POST", url: "https://uptolink.one/check/countdown", data: payload, headers: headersPost });
 
-            const waitTime = jobData.wait || 0;
-            const currentStep = jobData.step || step + 1;
-            addLog(`Step ${currentStep}: chờ ${waitTime}s`, 'info');
-            setBar(20 + step * 15);
+                let counter = waitTime;
+                let cdInterval = setInterval(() => {
+                    let lastLog = logArea.lastChild;
+                    lastLog.innerHTML = `<span style="color:#569cd6;">~</span> <span style="color:#cccccc">Đang đợi: <span style="color:#ffeb3b">${counter}s</span></span>`;
+                    counter--;
 
-            // Countdown
-            try {
-                const res = await gmFetch('https://uptolink.one/check/countdown', {
-                    method: 'POST',
-                    headers: postHeaders,
-                    body: payload
-                });
-                const cd = JSON.parse(res.text);
-                if (cd.status !== 'success') {
-                    addLog('Lỗi kích hoạt countdown!', 'err');
-                    break;
-                }
-                addLog('Countdown kích hoạt thành công', 'ok');
-            } catch (e) {
-                addLog(`Lỗi /check/countdown: ${e}`, 'err');
-                break;
-            }
+                    if (counter < 0) {
+                        clearInterval(cdInterval);
 
-            // Chờ
-            for (let i = waitTime; i > 0; i--) {
-                setStatus(`⏳ [Step ${currentStep}] Đang chờ ${i}s...`, 'info');
-                await sleep(1000);
-            }
-            await sleep(1000); // buffer
+                        setTimeout(() => {
+                            GM_xmlhttpRequest({
+                                method: "POST",
+                                url: "https://uptolink.one/check/continue",
+                                data: payload,
+                                headers: headersPost,
+                                onload: function(resCont) {
+                                    let contData = JSON.parse(resCont.responseText);
 
-            addLog('Gọi /check/continue...', 'info');
+                                    if (contData.status === "finish") {
+                                        logMsg("🎉 BẺ KHÓA THÀNH CÔNG!", "success");
+                                        logMsg(`Thấy link đích: ${contData.url}`, "warn");
+                                        logMsg("Mượn xác web gốc để trình duyệt tự gắn Header...", "warn");
 
-            // Continue
-            let contData;
-            try {
-                const res = await gmFetch('https://uptolink.one/check/continue', {
-                    method: 'POST',
-                    headers: postHeaders,
-                    body: payload
-                });
-                contData = JSON.parse(res.text);
-            } catch (e) {
-                addLog(`Lỗi /check/continue: ${e}`, 'err');
-                break;
-            }
+                                        let bounceUrl = originUrl + "/?redirect_to_upto=" + encodeURIComponent(contData.url);
+                                        setTimeout(() => { window.location.href = bounceUrl; }, 1000);
 
-            if (contData.status === 'finish') {
-                setBar(100);
-                setStatus('🎉 HOÀN THÀNH! Đang chuyển hướng...', 'ok');
-                addLog(`Finish URL: ${contData.url}`, 'ok');
-
-                resultEl.style.display = 'block';
-                resultEl.innerHTML = `🔗 <a href="${contData.url}" target="_blank" rel="noopener noreferrer">Mở thủ công nếu không tự chuyển</a>`;
-
-                // POST đến /finish/... bằng form submit (giữ nguyên cookie)
-                setTimeout(() => {
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = contData.url;
-                    form.style.display = 'none';
-                    document.body.appendChild(form);
-                    form.submit();
+                                    } else if (contData.status === "success") {
+                                        logMsg(`-> Sang vòng tiếp theo...`, "success");
+                                        runStep(token, refererUrl);
+                                    } else {
+                                        logMsg(`Lỗi Continue: ${resCont.responseText}`, "error");
+                                    }
+                                }
+                            });
+                        }, 1000);
+                    }
                 }, 1000);
-
-                btn.disabled = false;
-                return;
-            } else if (contData.status === 'success') {
-                addLog(`Xong Step ${currentStep}, tiếp tục...`, 'ok');
-                step++;
-            } else {
-                addLog(`Lỗi continue: ${JSON.stringify(contData)}`, 'err');
-                setStatus('Lỗi continue', 'err');
-                break;
             }
-        }
-
-        setStatus('Đã dừng', 'err');
-        btn.disabled = false;
-    }
-
-    btn.addEventListener('click', doBySpass);
-
-    // Tự động điền referer nếu đang ở huongdangetlink.com
-    const inputEl = document.getElementById('bypass-input');
-    if (window.location.hostname.includes('huongdangetlink.com')) {
-        inputEl.value = window.location.href;
-        addLog('Đã tự điền URL trang hiện tại làm Referer.', 'info');
-    }
-
-    // Tự động chạy nếu đang ở trang uptolink.one
-    if (window.location.hostname === 'uptolink.one') {
-        inputEl.value = document.referrer || 'https://huongdangetlink.com/';
-        addLog('Phát hiện trang uptolink.one, tự động chạy...', 'info');
-        setTimeout(doBySpass, 1500);
-    } else {
-        addLog('Nhập URL trang gốc rồi bấm nút để bypass.', 'info');
+        });
     }
 
 })();
