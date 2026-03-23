@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  Bypass UptoLink for cuttay user
-// @require      https://github.com/phatnottaken51/bypass-upto-link/raw/refs/heads/main/source.js
+// @require      https://github.com/ngbalamdz/bypassupto/raw/refs/heads/main/source.js
 // @match        *://*/*
 // @author       PhatNotTaken
 // @grant        GM_xmlhttpRequest
